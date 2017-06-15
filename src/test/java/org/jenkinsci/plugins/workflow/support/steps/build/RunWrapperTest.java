@@ -24,6 +24,8 @@
 
 package org.jenkinsci.plugins.workflow.support.steps.build;
 
+import hudson.model.Cause;
+import hudson.model.CauseAction;
 import hudson.model.Messages;
 import hudson.model.Result;
 import java.util.regex.Pattern;
@@ -174,7 +176,7 @@ public class RunWrapperTest {
                 WorkflowJob p = r.j.createProject(WorkflowJob.class, "this-job");
                 p.setDefinition(new CpsFlowDefinition(
                         "echo \"currentBuild.duration='${currentBuild.duration}'\"\n" +
-                                "echo \"currentBuild.durationString='${currentBuild.durationString}'\"\n", true));
+                        "echo \"currentBuild.durationString='${currentBuild.durationString}'\"\n", true));
                 WorkflowRun b = r.j.assertBuildStatusSuccess(p.scheduleBuild2(0).get());
                 r.j.assertLogNotContains("currentBuild.duration='0'", b);
                 r.j.assertLogNotContains("currentBuild.durationString='" + Messages.Run_NotStartedYet() + "'", b);
@@ -201,6 +203,20 @@ public class RunWrapperTest {
                 r.j.assertLogContains("final currentBuild.currentResult='" + Result.UNSTABLE.toString() + "'", b);
                 r.j.assertLogContains("resultIsBetterOrEqualTo FAILURE: true", b);
                 r.j.assertLogContains("resultIsWorseOrEqualTo SUCCESS: true", b);
+            }
+        });
+    }
+
+    @Issue("JENKINS-41272")
+    @Test public void getCauseDescriptions() {
+        r.addStep(new Statement() {
+            @Override public void evaluate() throws Throwable {
+                WorkflowJob p = r.j.createProject(WorkflowJob.class, "this-job");
+                p.setDefinition(new CpsFlowDefinition("echo \"${currentBuild.causeDescriptions}\"\n", true));
+                Cause cause = new Cause.RemoteCause("host", "note");
+                CauseAction action = new CauseAction(cause);
+                WorkflowRun b = r.j.assertBuildStatusSuccess(p.scheduleBuild2(0, action).get());
+                r.j.assertLogContains("Started by remote host host with note: note", b);
             }
         });
     }

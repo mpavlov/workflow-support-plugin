@@ -26,12 +26,14 @@ package org.jenkinsci.plugins.workflow.support.steps.build;
 
 import hudson.AbortException;
 import hudson.model.AbstractBuild;
+import hudson.model.Cause;
 import hudson.model.Result;
 import hudson.model.Run;
 import hudson.scm.ChangeLogSet;
 import hudson.security.ACL;
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -238,6 +240,23 @@ public final class RunWrapper implements Serializable {
         } catch (NoSuchMethodException x) {
             return Collections.emptyList();
         }
+    }
+
+    @Whitelisted
+    public List<Cause> getCauses() throws AbortException {
+        return build().getCauses();
+    }
+
+    @Whitelisted
+    public List<String> getCauseDescriptions() throws AbortException {
+        List<Cause> causes = getCauses();
+        List<String> descriptions = new ArrayList<>(causes.size());
+        for (Cause cause : causes) {
+            if (cause != null) {
+                descriptions.add(cause.getShortDescription());
+            }
+        }
+        return descriptions;
     }
 
 }
